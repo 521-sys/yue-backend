@@ -1,0 +1,38 @@
+# 粤语学习后端配置
+# 数据库需先建：CREATE DATABASE yue DEFAULT CHARACTER SET utf8mb4;
+server:
+  port: 8080
+
+spring:
+  profiles:
+    # 本地开发时加载 application-local.yml（已被 .gitignore 忽略，放真实密码）
+    active: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/yue?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: root
+    # 真实密码放在 application-local.yml，不进 Git
+    password: "${DB_PASSWORD}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      # 首次启动自动建表；稳定后建议改为 validate 或 none
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+  jackson:
+    default-property-inclusion: non_null
+
+app:
+  jwt:
+    # 真实密钥放在 application-local.yml，不进 Git；可用 openssl rand -base64 48 生成
+    secret: "${JWT_SECRET}"
+    # token 有效期：24 小时（毫秒）
+    expiration-ms: 86400000
+
+logging:
+  level:
+    com.yue: debug
+    org.hibernate.SQL: debug
