@@ -1,38 +1,46 @@
 # 粤语学习后端配置
 # 数据库需先建：CREATE DATABASE yue DEFAULT CHARACTER SET utf8mb4;
+# 敏感配置（密码/密钥）绝不写在本文件：
+#   - 本机开发：项目根 config/application-local.yml（已被 .gitignore 忽略，不进 Git、不打进 jar）
+#   - 生产部署：通过环境变量注入（MYSQL_PASSWORD / JWT_SECRET / WX_APPID / WX_SECRET）
 server:
   port: 8080
 
 spring:
   profiles:
-    # 本地开发时加载 application-local.yml（已被 .gitignore 忽略，放真实密码）
-    active: local
+    # 本机默认激活 local（读取 config/application-local.yml）；生产部署设环境变量 SPRING_PROFILES_ACTIVE=prod
+    active: ${SPRING_PROFILES_ACTIVE:local}
   datasource:
-    url: jdbc:mysql://localhost:3306/yue?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-    username: root
-    # 真实密码放在 application-local.yml，不进 Git
-    password: "${DB_PASSWORD}"
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/yue?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true}
+    username: ${MYSQL_USER:root}
+    # 无明文默认值：由 config/application-local.yml（本机）或环境变量 MYSQL_PASSWORD（部署）提供
+    password: ${MYSQL_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       # 首次启动自动建表；稳定后建议改为 validate 或 none
       ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
+    # 关闭 open-in-view，避免视图渲染期持有数据库连接
+    open-in-view: false
+    show-sql: false
   jackson:
     default-property-inclusion: non_null
 
 app:
+  cors:
+    # 部署到公网后用环境变量 CORS_ORIGINS 覆盖（逗号分隔），如 https://yue.example.com
+    allowed-origin-patterns: ${CORS_ORIGINS:http://localhost:*,http://127.0.0.1:*}
   jwt:
-    # 真实密钥放在 application-local.yml，不进 Git；可用 openssl rand -base64 48 生成
-    secret: "${JWT_SECRET}"
+    # 无明文默认值：本机由 config/application-local.yml 提供；生产必须设环境变量 JWT_SECRET（openssl rand -base64 48）
+    secret: ${JWT_SECRET:}
     # token 有效期：24 小时（毫秒）
     expiration-ms: 86400000
+  wechat:
+    # 小程序 AppID / AppSecret。留空 = 开发模式（按 code 模拟 openid），不能正式发布
+    appid: ${WX_APPID:}
+    secret: ${WX_SECRET:}
 
 logging:
   level:
-    com.yue: debug
-    org.hibernate.SQL: debug
+    com.yue: info
+    org.hibernate.SQL: warn

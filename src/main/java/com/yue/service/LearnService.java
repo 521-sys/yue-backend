@@ -19,6 +19,9 @@ import java.time.Instant;
 @Service
 public class LearnService {
 
+    /** 单份学习状态上限 512KB，防止异常/恶意超大 payload 落库 */
+    private static final int MAX_STATE_LENGTH = 512 * 1024;
+
     private final LearnStateRepository repo;
     private final ObjectMapper mapper;
 
@@ -36,6 +39,9 @@ public class LearnService {
 
     @Transactional
     public Instant upsertState(Long userId, String stateJson) {
+        if (stateJson == null || stateJson.length() > MAX_STATE_LENGTH) {
+            throw new IllegalArgumentException("学习状态数据过大");
+        }
         // 校验是合法 JSON，防止脏数据落库
         try {
             mapper.readTree(stateJson);
