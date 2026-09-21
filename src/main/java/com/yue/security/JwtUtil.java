@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * JWT 工具：签发与校验 token。
@@ -36,6 +37,12 @@ public class JwtUtil {
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key)
                 .compact();
+    }
+
+    public String generateAdmin(String username) {
+        return Jwts.builder().subject("admin").claim("username", username).claim("admin", true)
+                .issuedAt(new Date()).expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(key).compact();
     }
 
     /** 解析 token，失败抛 JwtException */

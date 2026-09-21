@@ -78,7 +78,8 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/audio/**", "/error").permitAll()
+                .requestMatchers("/api/auth/**", "/api/admin/auth/login", "/audio/**", "/error").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e.authenticationEntryPoint(restAuthenticationEntryPoint()))
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -13,6 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * JWT 鉴权过滤器：从 Authorization: Bearer <token> 取出 token，
@@ -35,9 +36,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             if (jwtUtil.isValid(token)) {
                 Claims claims = jwtUtil.parse(token);
-                Long userId = Long.valueOf(claims.getSubject());
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(userId, null, List.of());
+                Object principal = "admin".equals(claims.getSubject()) ? claims.get("username", String.class) : Long.valueOf(claims.getSubject());
+                var authorities = Boolean.TRUE.equals(claims.get("admin", Boolean.class)) ? List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN")) : Collections.<org.springframework.security.core.GrantedAuthority>emptyList();
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
