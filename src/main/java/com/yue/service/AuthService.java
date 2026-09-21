@@ -48,4 +48,46 @@ public class AuthService {
         String token = jwtUtil.generate(user.getId(), user.getUsername());
         return new AuthResponse(token, user.getUsername(), user.getId());
     }
+
+    // ==================== 手机号 + 密码（方案 B，后续可升级验证码） ====================
+
+    /** 手机号注册：手机号唯一；用户名自动生成 user<尾号4位>（冲突追加序号），昵称默认「用户<尾号4位>」 */
+    @Transactional
+    public AuthResponse phoneRegister(String phone, String password) {
+        if (userRepo.existsByPhone(phone)) {
+            throw new IllegalArgumentException("该手机号已注册");
+        }
+        String tail = phone.substring(phone.length() - 4);
+        User user = User.builder()
+                .username(uniqueUsernameFromPhone(phone))
+                .passwordHash(encoder.encode(password))
+                .phone(phone)
+                .nickname("用户" + tail)
+                .build();
+        userRepo.save(user);
+        String token = jwtUtil.generate(user.getId(), user.getUsername());
+        return new AuthResponse(token, user.getUsername(), user.getId(), user.getNickname(), user.getAvatar());
+    }
+
+    /** 手机号登录：手机号 + 密码校验；错误统一提示，避免暴露手机号是否注册 */
+    public AuthResponse phoneLogin(String phone, String password) {
+        User user = userRepo.findByPhone(phone)
+                .orElseThrow(() -> new IllegalArgumentException("手机号或密码错误"));
+        if (!encoder.matches(password, user.getPasswordHash())) {
+            throw new IllegalArgumentException("手机号或密码错误");
+        }
+        String token = jwtUtil.generate(user.getId(), user.getUsername());
+        return new AuthResponse(token, user.getUsername(), user.getId(), user.getNickname(), user.getAvatar());
+    }
+
+    private String uniqueUsernameFromPhone(String phone) {
+        String tail = phone.substring(phone.length() - 4);
+        String base = "user" + tail;
+        if (!userRepo.existsByUsername(base)) return base;
+        for (int i = 1; i < 100; i++) {
+            String cand = base + i;
+            if (!userRepo.existsByUsername(cand)) return cand;
+        }
+        return "user" + System.currentTimeMillis();
+    }
 }

@@ -2,6 +2,7 @@ package com.yue.controller;
 
 import com.yue.dto.AuthRequest;
 import com.yue.dto.AuthResponse;
+import com.yue.dto.PhoneAuthRequest;
 import com.yue.dto.WechatLoginRequest;
 import com.yue.service.AuthService;
 import com.yue.service.WeChatAuthService;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * 账号接口：注册 / 账号密码登录 / 微信小程序 code 登录。
+ * 账号接口：注册 / 账号密码登录 / 手机号注册登录 / 微信小程序 code 登录。
  * 返回 JWT，前端后续请求带 Authorization: Bearer <token>。
  */
 @RestController
@@ -37,6 +38,18 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody AuthRequest req) {
         return authService.login(req.getUsername(), req.getPassword());
+    }
+
+    /** H5 手机号注册（手机号 + 密码） */
+    @PostMapping("/phone/register")
+    public AuthResponse phoneRegister(@Valid @RequestBody PhoneAuthRequest req) {
+        return authService.phoneRegister(req.getPhone(), req.getPassword());
+    }
+
+    /** H5 手机号登录（手机号 + 密码） */
+    @PostMapping("/phone/login")
+    public AuthResponse phoneLogin(@Valid @RequestBody PhoneAuthRequest req) {
+        return authService.phoneLogin(req.getPhone(), req.getPassword());
     }
 
     /** 微信小程序登录：入参为 wx.login() 返回的 code */

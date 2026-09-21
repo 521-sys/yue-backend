@@ -105,4 +105,62 @@ class AuthServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> authService.login("nobody", "123456"));
     }
+
+    // ==================== 手机号 + 密码 ====================
+
+    @Test
+    @DisplayName("手机号注册成功：自动生成 user 用户名与默认昵称")
+    void phoneRegister_success() {
+        when(userRepo.existsByPhone("13812345678")).thenReturn(false);
+        when(userRepo.existsByUsername("user5678")).thenReturn(false);
+        when(encoder.encode("123456")).thenReturn("$2a$hash");
+        when(userRepo.save(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0);
+            u.setId(11L);
+            return u;
+        });
+
+        AuthResponse resp = authService.phoneRegister("13812345678", "123456");
+
+        assertEquals("user5678", resp.username());
+        assertEquals("用户5678", resp.nickname());
+        assertNotNull(resp.token());
+        verify(userRepo).save(argThat(u ->
+                "13812345678".equals(u.getPhone()) && "用户5678".equals(u.getNickname())));
+    }
+
+    @Test
+    @DisplayName("手机号注册失败：手机号已注册")
+    void phoneRegister_duplicate_throws() {
+        when(userRepo.existsByPhone("13812345678")).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> authService.phoneRegister("13812345678", "123456"));
+        verify(userRepo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("手机号登录成功：返回昵称头像")
+    void phoneLogin_success() {
+        User user = User.builder().id(11L).username("user5678").phone("13812345678")
+                .passwordHash("$2a$hash").nickname("小明").avatar("🦊").build();
+        when(userRepo.findByPhone("13812345678")).thenReturn(Optional.of(user));
+        when(encoder.matches("123456", "$2a$hash")).thenReturn(true);
+
+        AuthResponse resp = authService.phoneLogin("13812345678", "123456");
+
+        assertEquals("user5678", resp.username());
+        assertEquals("小明", resp.nickname());
+        assertEquals("🦊", resp.avatar());
+        assertNotNull(resp.token());
+    }
+
+    @Test
+    @DisplayName("手机号登录失败：手机号未注册 / 密码错误统一报错")
+    void phoneLogin_fail_throws() {
+        when(userRepo.findByPhone("13900000000")).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> authService.phoneLogin("13900000000", "123456"));
+    }
 }

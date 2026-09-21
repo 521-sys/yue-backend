@@ -13,7 +13,8 @@ import java.time.Instant;
 @Table(name = "users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "username"),
-                @UniqueConstraint(columnNames = "wxOpenid")
+                @UniqueConstraint(columnNames = "wxOpenid"),
+                @UniqueConstraint(columnNames = "phone")
         })
 @Getter
 @Setter
@@ -26,7 +27,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 登录用户名，全局唯一，3~32 字符；微信登录时自动生成 wx_<openid 后 6 位> */
+    /** 登录用户名，全局唯一，3~32 字符；微信登录时自动生成 wx_<openid 后 6 位>，手机号登录时自动生成 user<尾号> */
     @Column(nullable = false, length = 32)
     private String username;
 
@@ -37,6 +38,18 @@ public class User {
     /** 微信用户 openid；小程序登录时写入，唯一。非微信用户为 null */
     @Column(length = 64)
     private String wxOpenid;
+
+    /** 手机号（H5 手机号登录）；唯一，可为空（老用户/微信用户无手机号） */
+    @Column(length = 20)
+    private String phone;
+
+    /** 显示昵称；手机号用户默认「用户<尾号4位>」，个人中心可改 */
+    @Column(length = 32)
+    private String nickname;
+
+    /** 预设头像标识（emoji 或 key）；空 = 默认头像 */
+    @Column(length = 32)
+    private String avatar;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
