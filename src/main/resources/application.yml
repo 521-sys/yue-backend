@@ -40,13 +40,12 @@ app:
     appid: ${WX_APPID:}
     secret: ${WX_SECRET:}
 
+admin:
+  username: ${ADMIN_USERNAME:admin}
+  password-hash: ${ADMIN_PASSWORD_HASH:}
+
 logging:
   level:
     com.yue: info
     org.hibernate.SQL: warn
-  admin:
-    username: ${ADMIN_USERNAME:admin}
-    password-hash: ${ADMIN_PASSWORD_HASH:}
-  admin:
-    username: ${ADMIN_USERNAME:admin}
-    password-hash: ${ADMIN_PASSWORD_HASH:}
+
