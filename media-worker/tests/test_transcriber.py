@@ -8,6 +8,14 @@ from asr_service.transcriber import LocalTranscriber
 
 
 class TranscriberTests(unittest.TestCase):
+    def test_incomplete_model_never_invokes_loader(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "model.bin").touch()
+            with patch("asr_service.transcriber.WhisperModel") as factory:
+                with self.assertRaisesRegex(RuntimeError, "模型"):
+                    LocalTranscriber(Path(directory)).transcribe(Path("clip.mp4"))
+                factory.assert_not_called()
+
     def test_missing_local_model(self):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(RuntimeError, "模型"):
@@ -16,6 +24,8 @@ class TranscriberTests(unittest.TestCase):
     def test_normalizes_filters_sorts_and_reuses_offline_model(self):
         with tempfile.TemporaryDirectory() as directory:
             Path(directory, "model.bin").touch()
+            Path(directory, "tokenizer.json").write_text("{}")
+            Path(directory, "config.json").write_text("{}")
             fake = MagicMock()
             fake.transcribe.return_value = ([
                 SimpleNamespace(start=3, end=4, text=" 再见 "),

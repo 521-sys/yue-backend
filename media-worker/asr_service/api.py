@@ -14,7 +14,7 @@ from python_multipart import MultipartParser
 from python_multipart.multipart import parse_options_header
 from starlette.concurrency import run_in_threadpool
 
-from .transcriber import Cue, LocalTranscriber
+from .transcriber import Cue, LocalTranscriber, ModelUnavailable
 
 ORIGINS = ["http://localhost:8443", "http://127.0.0.1:8443"]
 MAX_UPLOAD_BYTES = 200 * 1024 * 1024
@@ -123,7 +123,7 @@ def create_app(transcribe_fn: Callable[[Path], list[Cue]] | None = None,
     worker = LocalTranscriber(Path(model_dir)) if model_dir else None
 
     def ready():
-        return transcribe_fn is not None or (worker is not None and (worker.model_dir / "model.bin").is_file())
+        return transcribe_fn is not None or (worker is not None and worker.available())
 
     @app.get("/health")
     def health():
@@ -157,6 +157,8 @@ def create_app(transcribe_fn: Callable[[Path], list[Cue]] | None = None,
                 return {"cues": cues}
         except UploadError as cause:
             return JSONResponse({"error": cause.message}, status_code=cause.status)
+        except ModelUnavailable as cause:
+            return JSONResponse({"error": str(cause)}, status_code=503)
         except Exception:
             return JSONResponse({"error": "识别失败，请检查本地模型和视频后重试"}, status_code=500)
         finally:

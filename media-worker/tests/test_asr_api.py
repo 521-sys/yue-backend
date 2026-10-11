@@ -74,6 +74,15 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(client.get("/health").status_code, 503)
         self.assertEqual(self.post(app).status_code, 503)
 
+    def test_incomplete_model_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "model.bin").touch()
+            with patch.dict(os.environ, {"ASR_MODEL_DIR": directory}):
+                app = create_app()
+            with TestClient(app) as client:
+                self.assertEqual(client.get("/health").status_code, 503)
+            self.assertEqual(self.post(app).status_code, 503)
+
     def test_busy_request_rejected(self):
         entered, release = threading.Event(), threading.Event()
         def transcribe(path):
