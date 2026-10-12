@@ -31,7 +31,7 @@ class LocalTranscriber:
                 self._model = WhisperModel(str(self.model_dir), device="cpu", compute_type="int8", local_files_only=True)
             except Exception as cause:
                 raise ModelUnavailable("本地模型无法加载，请检查模型文件") from cause
-        segments, _ = self._model.transcribe(str(path), language="zh", beam_size=3, vad_filter=True)
+        segments, _ = self._model.transcribe(str(path), language="yue", task="transcribe", beam_size=3, vad_filter=True)
         cues: list[Cue] = []
         for segment in segments:
             text = segment.text.strip()

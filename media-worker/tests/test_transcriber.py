@@ -44,4 +44,4 @@ class TranscriberTests(unittest.TestCase):
                 fake.transcribe.return_value = ([], None)
                 self.assertEqual(worker.transcribe(Path("silent.mp4")), [])
                 factory.assert_called_once_with(str(Path(directory)), device="cpu", compute_type="int8", local_files_only=True)
-                fake.transcribe.assert_called_with("silent.mp4", language="zh", beam_size=3, vad_filter=True)
+                fake.transcribe.assert_called_with("silent.mp4", language="yue", task="transcribe", beam_size=3, vad_filter=True)
