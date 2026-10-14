@@ -7,6 +7,12 @@ server:
   port: 8080
 
 spring:
+  servlet:
+    multipart:
+      file-size-threshold: 0
+      max-file-size: 200MB
+      max-request-size: 201MB
+      resolve-lazily: true
   profiles:
     # 本机默认激活 local（读取 config/application-local.yml）；生产部署设环境变量 SPRING_PROFILES_ACTIVE=prod
     active: ${SPRING_PROFILES_ACTIVE:local}
@@ -27,6 +33,14 @@ spring:
     default-property-inclusion: non_null
 
 app:
+  dubbing-asr:
+    enabled: ${DUBBING_ASR_ENABLED:false}
+    secret-id: ${TENCENTCLOUD_SECRET_ID:}
+    secret-key: ${TENCENTCLOUD_SECRET_KEY:}
+    monthly-seconds: ${DUBBING_ASR_MONTHLY_SECONDS:600}
+    budget-file: ${DUBBING_ASR_BUDGET_FILE:./data/dubbing-asr-budget.txt}
+    ffmpeg: ${DUBBING_FFMPEG:ffmpeg}
+    ffprobe: ${DUBBING_FFPROBE:ffprobe}
   cors:
     # 部署到公网后用环境变量 CORS_ORIGINS 覆盖（逗号分隔），如 https://yue.example.com
     allowed-origin-patterns: ${CORS_ORIGINS:http://localhost:*,http://127.0.0.1:*}
