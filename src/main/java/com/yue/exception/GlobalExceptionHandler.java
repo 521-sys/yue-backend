@@ -17,6 +17,22 @@ import java.util.stream.Collectors;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(com.yue.admin.AdminApiException.class)
+    public ResponseEntity<Map<String,String>> admin(com.yue.admin.AdminApiException e) {
+        return ResponseEntity.status(e.status).body(Map.of("error",e.getMessage()));
+    }
+    @ExceptionHandler({org.springframework.dao.OptimisticLockingFailureException.class, org.springframework.dao.DataIntegrityViolationException.class})
+    public ResponseEntity<Map<String,String>> conflict(Exception e) {
+        return ResponseEntity.status(409).body(Map.of("error","内容已变更或编码冲突，请刷新后重试"));
+    }
+    @ExceptionHandler({org.springframework.web.bind.MissingServletRequestParameterException.class,org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,org.springframework.http.converter.HttpMessageNotReadableException.class})
+    public ResponseEntity<Map<String,String>> invalid(Exception e) {
+        return ResponseEntity.badRequest().body(Map.of("error","请求参数格式不正确"));
+    }
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String,String>> large(Exception e) {
+        return ResponseEntity.status(413).body(Map.of("error","上传文件超过大小限制"));
+    }
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 

@@ -28,12 +28,12 @@ class SceneServiceTest {
         Scene builtin = Scene.builder().id(1L).builtin(true).build();
         when(scenes.findById(1L)).thenReturn(Optional.of(builtin));
         assertThrows(IllegalArgumentException.class, () -> service.delete(9L, 1L));
-        verify(scenes, never()).delete(any());
+        verify(scenes, never()).delete(any(Scene.class));
     }
 
     @Test
     void favoriteIsIdempotent() {
-        Scene scene = Scene.builder().id(2L).builtin(true).build();
+        Scene scene = Scene.builder().id(2L).builtin(true).status("PUBLISHED").build();
         when(scenes.findById(2L)).thenReturn(Optional.of(scene));
         when(favorites.existsByUserIdAndSceneId(7L, 2L)).thenReturn(true);
         service.favorite(7L, 2L);

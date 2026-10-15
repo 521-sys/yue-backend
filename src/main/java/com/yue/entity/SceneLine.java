@@ -14,4 +14,5 @@ public class SceneLine {
     @Column(nullable = false, columnDefinition = "TEXT") private String cantoneseText;
     @Column(nullable = false, columnDefinition = "TEXT") private String mandarinText;
     @Column(length = 80) private String audioKey;
+    @Column(length = 2000) private String jyutping;
 }

@@ -1,5 +1,6 @@
 # Maven 编译产物
 target/
+data/admin-audio/
 *.class
 
 # IDE 配置

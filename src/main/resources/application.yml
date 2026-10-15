@@ -55,6 +55,7 @@ app:
     secret: ${WX_SECRET:}
 
 admin:
+  audio-dir: ${ADMIN_AUDIO_DIR:./data/admin-audio}
   username: ${ADMIN_USERNAME:admin}
   password-hash: ${ADMIN_PASSWORD_HASH:}
 

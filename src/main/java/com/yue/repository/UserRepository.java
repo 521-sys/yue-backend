@@ -8,7 +8,7 @@ import java.util.Optional;
 /**
  * 用户仓储：Spring Data JPA 自动实现。
  */
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<User> {
 
     Optional<User> findByUsername(String username);
 
