@@ -1,6 +1,6 @@
 # 管理后台第一版运行与发布
 
-核对日期：2026-10-16。本次完成本地实现和验证，未部署生产。
+核对日期：2026-10-17。生产部署和可回滚验收已完成。
 
 ## 生产发布目标与固定路径
 
@@ -53,13 +53,20 @@ location = /admin {
     return 301 /admin/;
 }
 
-location /admin/ {
-    alias /var/www/yue-admin/;
-    try_files $uri $uri/ /admin/index.html;
+location = /admin/index.html {
+    alias /var/www/yue-admin/index.html;
 }
 
-location ^~ /audio/uploads/ {
-    proxy_pass http://127.0.0.1:8080;
+location ^~ /admin/assets/ {
+    alias /var/www/yue-admin/assets/;
+}
+
+location /admin/ {
+    rewrite ^ /admin/index.html last;
+}
+
+location /audio/uploads/ {
+    proxy_pass http://127.0.0.1:8080/audio/uploads/;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -101,4 +108,8 @@ location ~ ^/api/admin/audio(?:/[0-9]+)?$ {
 用户网页和管理端目录，依次执行 `nginx -t`、reload Nginx、重启后端并核对上线前
 基线。新增列/表默认保留，避免直接删除新内容；若必须恢复数据库，应同时恢复同一
 备份时点的 `/opt/yue/admin-audio`，并评估备份后写入的数据。禁止仅删除上传目录
-或仅恢复数据库。生产迁移与回滚尚未实际执行。
+或仅恢复数据库。
+
+本次生产协调备份为 `/opt/yue/release-backup-20261017-admin-IQ40zS`。上线验证已确认
+`nginx -t`、后端 active、用户网页与后台资源 200、公开场景 API 200、未登录管理接口
+401；生产临时场景和音频的发布、Range、下架与删除流程通过且数据已清理。
