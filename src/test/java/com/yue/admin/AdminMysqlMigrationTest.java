@@ -23,6 +23,8 @@ class AdminMysqlMigrationTest {
    s.execute("DROP TABLE audio_resources");s.execute("DROP TABLE admin_audit_logs");
    s.execute("ALTER TABLE scenes DROP COLUMN category,DROP COLUMN difficulty,DROP COLUMN status,DROP COLUMN sort_order,DROP COLUMN version,DROP COLUMN updated_at");
    s.execute("ALTER TABLE scene_lines DROP COLUMN jyutping");
+   s.execute("ALTER TABLE scenes CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+   s.execute("ALTER TABLE scene_lines CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
    s.execute("INSERT INTO scenes(code,title,place,rolea,roleb,builtin,created_at) VALUES('existing','保留内容','香港','A','B',1,NOW(6))");
   }
   runSql("scripts/admin-v1-migration.sql");runSql("scripts/admin-v1-seed.sql");
