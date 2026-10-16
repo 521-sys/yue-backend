@@ -22,7 +22,7 @@
 
 ## 本地隔离预览
 
-在后端运行：`mvn spring-boot:test-run -Dspring-boot.test-run.main-class=com.yue.admin.AdminPreviewApplication`。
+在后端运行：`mvn spring-boot:test-run -Dspring-boot.run.main-class=com.yue.admin.AdminPreviewApplication`。2026-10-16 已重新启动并验证前后端 HTTP 200。
 预览仅绑定 127.0.0.1:18081，使用 H2 内存库和测试账号 `preview` / `local-preview-only`，重启丢失测试场景。测试入口不打入生产 jar。
 管理端 PowerShell：`$env:VITE_API_BASE='http://127.0.0.1:18081/api'`，再运行 `npm run dev -- --host 127.0.0.1 --port 5175`。
 
