@@ -41,6 +41,23 @@ app:
     budget-file: ${DUBBING_ASR_BUDGET_FILE:./data/dubbing-asr-budget.txt}
     ffmpeg: ${DUBBING_FFMPEG:ffmpeg}
     ffprobe: ${DUBBING_FFPROBE:ffprobe}
+  sms:
+    enabled: ${SMS_ENABLED:false}
+    code-pepper: ${SMS_CODE_PEPPER:}
+    expiry-seconds: ${SMS_EXPIRY_SECONDS:300}
+    cooldown-seconds: ${SMS_COOLDOWN_SECONDS:60}
+    phone-daily-limit: ${SMS_PHONE_DAILY_LIMIT:10}
+    ip-daily-limit: ${SMS_IP_DAILY_LIMIT:30}
+    max-failures: ${SMS_MAX_FAILURES:5}
+    cleanup-cron: ${SMS_CLEANUP_CRON:0 15 3 * * *}
+    trusted-proxy-addresses: ${SMS_TRUSTED_PROXY_ADDRESSES:127.0.0.1,::1}
+    tencent:
+      secret-id: ${SMS_TENCENT_SECRET_ID:}
+      secret-key: ${SMS_TENCENT_SECRET_KEY:}
+      sdk-app-id: ${SMS_TENCENT_SDK_APP_ID:}
+      sign-name: ${SMS_TENCENT_SIGN_NAME:}
+      template-id: ${SMS_TENCENT_TEMPLATE_ID:}
+      region: ${SMS_TENCENT_REGION:ap-guangzhou}
   cors:
     # 部署到公网后用环境变量 CORS_ORIGINS 覆盖（逗号分隔），如 https://yue.example.com
     allowed-origin-patterns: ${CORS_ORIGINS:http://localhost:*,http://127.0.0.1:*}
