@@ -4,13 +4,22 @@ import com.yue.dto.AuthRequest;
 import com.yue.dto.AuthResponse;
 import com.yue.dto.PhoneAuthRequest;
 import com.yue.dto.WechatLoginRequest;
+import com.yue.dto.SmsCodeRequest;
+import com.yue.dto.SmsCodeResponse;
+import com.yue.dto.SmsLoginRequest;
 import com.yue.service.AuthService;
+import com.yue.service.SmsAuthService;
 import com.yue.service.WeChatAuthService;
+import com.yue.sms.ClientIpResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+
+import java.time.Instant;
 
 import java.util.Map;
 
@@ -24,10 +33,27 @@ public class AuthController {
 
     private final AuthService authService;
     private final WeChatAuthService wxAuthService;
+    private final SmsAuthService smsAuthService;
+    private final ClientIpResolver clientIpResolver;
 
-    public AuthController(AuthService authService, WeChatAuthService wxAuthService) {
+    public AuthController(AuthService authService, WeChatAuthService wxAuthService,
+                          SmsAuthService smsAuthService, ClientIpResolver clientIpResolver) {
         this.authService = authService;
         this.wxAuthService = wxAuthService;
+        this.smsAuthService = smsAuthService;
+        this.clientIpResolver = clientIpResolver;
+    }
+
+    @PostMapping("/sms/code")
+    public ResponseEntity<SmsCodeResponse> sendSmsCode(
+            @Valid @RequestBody SmsCodeRequest req, HttpServletRequest request) {
+        int retry = smsAuthService.sendCode(req.phone(), clientIpResolver.resolve(request), Instant.now());
+        return ResponseEntity.accepted().body(new SmsCodeResponse(true, retry));
+    }
+
+    @PostMapping("/sms/login")
+    public AuthResponse smsLogin(@Valid @RequestBody SmsLoginRequest req) {
+        return smsAuthService.login(req.phone(), req.code(), Instant.now());
     }
 
     @PostMapping("/register")

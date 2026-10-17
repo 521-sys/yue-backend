@@ -17,6 +17,17 @@ import java.util.stream.Collectors;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(com.yue.sms.SmsRateLimitException.class)
+    public ResponseEntity<Map<String, Object>> smsRateLimit(com.yue.sms.SmsRateLimitException e) {
+        return ResponseEntity.status(429).body(Map.of(
+                "error", "请求过于频繁，请稍后重试",
+                "retryAfterSeconds", e.retryAfterSeconds()));
+    }
+
+    @ExceptionHandler({com.yue.sms.SmsUnavailableException.class, com.yue.sms.SmsDeliveryException.class})
+    public ResponseEntity<Map<String, String>> smsUnavailable(RuntimeException e) {
+        return ResponseEntity.status(503).body(Map.of("error", "短信服务暂不可用，请稍后重试"));
+    }
     @ExceptionHandler(com.yue.admin.AdminApiException.class)
     public ResponseEntity<Map<String,String>> admin(com.yue.admin.AdminApiException e) {
         return ResponseEntity.status(e.status).body(Map.of("error",e.getMessage()));
