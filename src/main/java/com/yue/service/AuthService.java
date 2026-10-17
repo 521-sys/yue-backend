@@ -7,6 +7,10 @@ import com.yue.security.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import java.security.SecureRandom;
+import java.util.Base64;
 
 /**
  * 账号服务：注册、登录。
@@ -18,6 +22,7 @@ public class AuthService {
     private final UserRepository userRepo;
     private final PasswordEncoder encoder;
     private final JwtUtil jwtUtil;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(UserRepository userRepo, PasswordEncoder encoder, JwtUtil jwtUtil) {
         this.userRepo = userRepo;
@@ -75,6 +80,31 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("手机号或密码错误"));
         if (!encoder.matches(password, user.getPasswordHash())) {
             throw new IllegalArgumentException("手机号或密码错误");
+        }
+        String token = jwtUtil.generate(user.getId(), user.getUsername());
+        return new AuthResponse(token, user.getUsername(), user.getId(), user.getNickname(), user.getAvatar());
+    }
+
+    @Transactional
+    AuthResponse loginOrRegisterSmsUser(String phone) {
+        User user = userRepo.findByPhone(phone).orElse(null);
+        if (user == null) {
+            byte[] secret = new byte[32];
+            secureRandom.nextBytes(secret);
+            String tail = phone.substring(phone.length() - 4);
+            user = User.builder()
+                    .username(uniqueUsernameFromPhone(phone))
+                    .passwordHash(encoder.encode(Base64.getUrlEncoder().withoutPadding().encodeToString(secret)))
+                    .phone(phone)
+                    .nickname("用户" + tail)
+                    .build();
+            try {
+                user = userRepo.save(user);
+            } catch (DataIntegrityViolationException collision) {
+                User winner = userRepo.findByPhone(phone).orElse(null);
+                if (winner == null) throw collision;
+                user = winner;
+            }
         }
         String token = jwtUtil.generate(user.getId(), user.getUsername());
         return new AuthResponse(token, user.getUsername(), user.getId(), user.getNickname(), user.getAvatar());

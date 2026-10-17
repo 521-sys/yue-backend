@@ -1,6 +1,7 @@
 package com.yue.service;
 
 import com.yue.entity.SmsLoginCode;
+import com.yue.dto.AuthResponse;
 import com.yue.repository.SmsLoginCodeRepository;
 import com.yue.sms.SmsCodeHasher;
 import com.yue.sms.SmsCodeStatus;
@@ -10,6 +11,7 @@ import com.yue.sms.SmsRateLimitException;
 import com.yue.sms.SmsSendReceipt;
 import com.yue.sms.SmsSender;
 import com.yue.sms.SmsUnavailableException;
+import com.yue.sms.SmsInvalidCodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -34,14 +38,53 @@ public class SmsAuthService {
     private final SmsSender sender;
     private final SmsProperties properties;
     private final SmsCodeHasher hasher;
+    private final AuthService authService;
     private final SecureRandom random = new SecureRandom();
 
     public SmsAuthService(SmsLoginCodeRepository repository, SmsSender sender,
-                          SmsProperties properties, SmsCodeHasher hasher) {
+                          SmsProperties properties, SmsCodeHasher hasher, AuthService authService) {
         this.repository = repository;
         this.sender = sender;
         this.properties = properties;
         this.hasher = hasher;
+        this.authService = authService;
+    }
+
+    @Transactional(noRollbackFor = SmsInvalidCodeException.class)
+    public AuthResponse login(String phone, String code, Instant now) {
+        if (phone == null || !phone.matches("^1[3-9]\\d{9}$")
+                || code == null || !code.matches("^\\d{6}$")) {
+            throw invalidCode();
+        }
+        SmsLoginCode row = repository.findFirstByActivePhoneAndStatusOrderByCreatedAtDesc(
+                        phone, SmsCodeStatus.SENT)
+                .orElseThrow(this::invalidCode);
+        if (!now.isBefore(row.getExpiresAt()) || row.getFailedAttempts() >= properties.getMaxFailures()) {
+            row.setStatus(SmsCodeStatus.FAILED);
+            row.setActivePhone(null);
+            repository.saveAndFlush(row);
+            throw invalidCode();
+        }
+        byte[] expected = row.getCodeHash().getBytes(StandardCharsets.US_ASCII);
+        byte[] actual = hasher.hashCode(phone, code).getBytes(StandardCharsets.US_ASCII);
+        if (!MessageDigest.isEqual(expected, actual)) {
+            row.setFailedAttempts(row.getFailedAttempts() + 1);
+            if (row.getFailedAttempts() >= properties.getMaxFailures()) {
+                row.setStatus(SmsCodeStatus.FAILED);
+                row.setActivePhone(null);
+            }
+            repository.saveAndFlush(row);
+            throw invalidCode();
+        }
+        row.setStatus(SmsCodeStatus.CONSUMED);
+        row.setConsumedAt(now);
+        row.setActivePhone(null);
+        repository.saveAndFlush(row);
+        return authService.loginOrRegisterSmsUser(phone);
+    }
+
+    private SmsInvalidCodeException invalidCode() {
+        return new SmsInvalidCodeException();
     }
 
     @Transactional(noRollbackFor = SmsDeliveryException.class)

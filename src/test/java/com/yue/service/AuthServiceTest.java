@@ -163,4 +163,30 @@ class AuthServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> authService.phoneLogin("13900000000", "123456"));
     }
+
+    @Test
+    void smsLoginReturnsExistingUserWithoutChangingPassword() {
+        User user = User.builder().id(12L).username("member").phone("13812345678")
+                .passwordHash("$2a$existing").nickname("会员").build();
+        when(userRepo.findByPhone("13812345678")).thenReturn(Optional.of(user));
+        AuthResponse response = authService.loginOrRegisterSmsUser("13812345678");
+        assertEquals(12L, response.userId());
+        assertEquals("$2a$existing", user.getPasswordHash());
+        verify(userRepo, never()).save(any());
+    }
+
+    @Test
+    void smsLoginCreatesUserWithRandomInternalPasswordAndCollisionSafeName() {
+        when(userRepo.findByPhone("13812345678")).thenReturn(Optional.empty());
+        when(userRepo.existsByUsername("user5678")).thenReturn(true);
+        when(userRepo.existsByUsername("user56781")).thenReturn(false);
+        when(encoder.encode(anyString())).thenReturn("$2a$random");
+        when(userRepo.save(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0); u.setId(13L); return u;
+        });
+        AuthResponse response = authService.loginOrRegisterSmsUser("13812345678");
+        assertEquals("user56781", response.username());
+        assertEquals("用户5678", response.nickname());
+        verify(encoder).encode(argThat(v -> v.length() >= 40 && !v.equals("123456")));
+    }
 }
