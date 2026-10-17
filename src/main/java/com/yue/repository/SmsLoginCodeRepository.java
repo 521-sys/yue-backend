@@ -9,6 +9,8 @@ import java.util.Collection;
 import java.util.Optional;
 
 public interface SmsLoginCodeRepository extends JpaRepository<SmsLoginCode, Long> {
+    Optional<SmsLoginCode> findFirstByActivePhoneOrderByCreatedAtDesc(String activePhone);
+
     Optional<SmsLoginCode> findFirstByPhoneAndStatusOrderByCreatedAtDesc(
             String phone, SmsCodeStatus status);
 
