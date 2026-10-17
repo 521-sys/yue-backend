@@ -85,7 +85,6 @@ public class AuthService {
         return new AuthResponse(token, user.getUsername(), user.getId(), user.getNickname(), user.getAvatar());
     }
 
-    @Transactional
     AuthResponse loginOrRegisterSmsUser(String phone) {
         User user = userRepo.findByPhone(phone).orElse(null);
         if (user == null) {
@@ -99,7 +98,9 @@ public class AuthService {
                     .nickname("用户" + tail)
                     .build();
             try {
-                user = userRepo.save(user);
+                // No outer transaction here: saveAndFlush owns the transaction so a phone-unique
+                // race can be caught and followed by a clean read of the winning row.
+                user = userRepo.saveAndFlush(user);
             } catch (DataIntegrityViolationException collision) {
                 User winner = userRepo.findByPhone(phone).orElse(null);
                 if (winner == null) throw collision;

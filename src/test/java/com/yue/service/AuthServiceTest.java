@@ -181,12 +181,29 @@ class AuthServiceTest {
         when(userRepo.existsByUsername("user5678")).thenReturn(true);
         when(userRepo.existsByUsername("user56781")).thenReturn(false);
         when(encoder.encode(anyString())).thenReturn("$2a$random");
-        when(userRepo.save(any(User.class))).thenAnswer(inv -> {
+        when(userRepo.saveAndFlush(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0); u.setId(13L); return u;
         });
         AuthResponse response = authService.loginOrRegisterSmsUser("13812345678");
         assertEquals("user56781", response.username());
         assertEquals("用户5678", response.nickname());
         verify(encoder).encode(argThat(v -> v.length() >= 40 && !v.equals("123456")));
+    }
+
+    @Test
+    void smsRegistrationPhoneRaceReturnsWinningUser() {
+        User winner = User.builder().id(14L).username("winner").phone("13812345678")
+                .passwordHash("$2a$winner").build();
+        when(userRepo.findByPhone("13812345678"))
+                .thenReturn(Optional.empty(), Optional.of(winner));
+        when(userRepo.existsByUsername("user5678")).thenReturn(false);
+        when(encoder.encode(anyString())).thenReturn("$2a$random");
+        when(userRepo.saveAndFlush(any(User.class)))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("phone unique"));
+
+        AuthResponse response = authService.loginOrRegisterSmsUser("13812345678");
+
+        assertEquals(14L, response.userId());
+        assertEquals("winner", response.username());
     }
 }
