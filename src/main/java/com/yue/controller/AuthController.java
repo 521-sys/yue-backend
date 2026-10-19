@@ -2,12 +2,16 @@ package com.yue.controller;
 
 import com.yue.dto.AuthRequest;
 import com.yue.dto.AuthResponse;
+import com.yue.dto.EmailCodeRequest;
+import com.yue.dto.EmailCodeResponse;
+import com.yue.dto.EmailLoginRequest;
 import com.yue.dto.PhoneAuthRequest;
 import com.yue.dto.WechatLoginRequest;
 import com.yue.dto.SmsCodeRequest;
 import com.yue.dto.SmsCodeResponse;
 import com.yue.dto.SmsLoginRequest;
 import com.yue.service.AuthService;
+import com.yue.service.EmailAuthService;
 import com.yue.service.SmsAuthService;
 import com.yue.service.WeChatAuthService;
 import com.yue.sms.ClientIpResolver;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
+import java.util.Locale;
 
 import java.util.Map;
 
@@ -34,14 +39,30 @@ public class AuthController {
     private final AuthService authService;
     private final WeChatAuthService wxAuthService;
     private final SmsAuthService smsAuthService;
+    private final EmailAuthService emailAuthService;
     private final ClientIpResolver clientIpResolver;
 
     public AuthController(AuthService authService, WeChatAuthService wxAuthService,
-                          SmsAuthService smsAuthService, ClientIpResolver clientIpResolver) {
+                          SmsAuthService smsAuthService, EmailAuthService emailAuthService,
+                          ClientIpResolver clientIpResolver) {
         this.authService = authService;
         this.wxAuthService = wxAuthService;
         this.smsAuthService = smsAuthService;
+        this.emailAuthService = emailAuthService;
         this.clientIpResolver = clientIpResolver;
+    }
+
+    @PostMapping("/email/code")
+    public ResponseEntity<EmailCodeResponse> sendEmailCode(
+            @Valid @RequestBody EmailCodeRequest req, HttpServletRequest request) {
+        int retry = emailAuthService.sendCode(normalizeEmail(req.email()),
+                clientIpResolver.resolve(request), Instant.now());
+        return ResponseEntity.accepted().body(new EmailCodeResponse(true, retry));
+    }
+
+    @PostMapping("/email/login")
+    public AuthResponse emailLogin(@Valid @RequestBody EmailLoginRequest req) {
+        return emailAuthService.login(normalizeEmail(req.email()), req.code(), Instant.now());
     }
 
     @PostMapping("/sms/code")
@@ -88,5 +109,9 @@ public class AuthController {
     @PostMapping("/wechat/status")
     public Map<String, Object> wechatStatus() {
         return Map.of("configured", wxAuthService.isProductionConfigured());
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

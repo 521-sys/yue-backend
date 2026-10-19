@@ -2,6 +2,7 @@ package com.yue.controller;
 
 import com.yue.dto.AuthResponse;
 import com.yue.service.AuthService;
+import com.yue.service.EmailAuthService;
 import com.yue.service.SmsAuthService;
 import com.yue.service.WeChatAuthService;
 import com.yue.sms.ClientIpResolver;
@@ -29,6 +30,7 @@ class SmsAuthControllerTest {
     @MockBean AuthService authService;
     @MockBean WeChatAuthService weChatAuthService;
     @MockBean SmsAuthService smsAuthService;
+    @MockBean EmailAuthService emailAuthService;
     @MockBean ClientIpResolver clientIpResolver;
     @MockBean JwtUtil jwtUtil;
 
