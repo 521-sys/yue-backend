@@ -58,6 +58,23 @@ app:
       sign-name: ${SMS_TENCENT_SIGN_NAME:}
       template-id: ${SMS_TENCENT_TEMPLATE_ID:}
       region: ${SMS_TENCENT_REGION:ap-guangzhou}
+  email:
+    enabled: ${EMAIL_ENABLED:false}
+    code-pepper: ${EMAIL_CODE_PEPPER:}
+    expiry-seconds: ${EMAIL_EXPIRY_SECONDS:600}
+    cooldown-seconds: ${EMAIL_COOLDOWN_SECONDS:60}
+    email-daily-limit: ${EMAIL_DAILY_LIMIT:10}
+    ip-daily-limit: ${EMAIL_IP_DAILY_LIMIT:30}
+    max-failures: ${EMAIL_MAX_FAILURES:5}
+    cleanup-cron: ${EMAIL_CLEANUP_CRON:0 25 3 * * *}
+    smtp:
+      host: ${EMAIL_SMTP_HOST:smtpdm.aliyun.com}
+      port: ${EMAIL_SMTP_PORT:465}
+      username: ${EMAIL_SMTP_USERNAME:}
+      password: ${EMAIL_SMTP_PASSWORD:}
+      from: ${EMAIL_FROM:}
+      from-name: ${EMAIL_FROM_NAME:粤语学习}
+      ssl: ${EMAIL_SMTP_SSL:true}
   cors:
     # 部署到公网后用环境变量 CORS_ORIGINS 覆盖（逗号分隔），如 https://yue.example.com
     allowed-origin-patterns: ${CORS_ORIGINS:http://localhost:*,http://127.0.0.1:*}
