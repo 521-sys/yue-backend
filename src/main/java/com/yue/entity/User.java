@@ -14,7 +14,8 @@ import java.time.Instant;
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "username"),
                 @UniqueConstraint(columnNames = "wxOpenid"),
-                @UniqueConstraint(columnNames = "phone")
+                @UniqueConstraint(columnNames = "phone"),
+                @UniqueConstraint(columnNames = "email")
         })
 @Getter
 @Setter
@@ -42,6 +43,10 @@ public class User {
     /** 手机号（H5 手机号登录）；唯一，可为空（老用户/微信用户无手机号） */
     @Column(length = 20)
     private String phone;
+
+    /** 邮箱验证码登录标识；规范化为小写后保存，唯一，可为空 */
+    @Column(length = 254)
+    private String email;
 
     /** 显示昵称；手机号用户默认「用户<尾号4位>」，个人中心可改 */
     @Column(length = 32)

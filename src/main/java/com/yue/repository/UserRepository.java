@@ -21,4 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long>, org.springfra
     Optional<User> findByPhone(String phone);
 
     boolean existsByPhone(String phone);
+
+    Optional<User> findByEmail(String email);
+
+    boolean existsByEmail(String email);
 }

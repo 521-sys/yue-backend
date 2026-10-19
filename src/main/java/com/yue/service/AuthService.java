@@ -10,7 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.security.SecureRandom;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HexFormat;
+import java.util.Locale;
 
 /**
  * 账号服务：注册、登录。
@@ -111,6 +115,30 @@ public class AuthService {
         return new AuthResponse(token, user.getUsername(), user.getId(), user.getNickname(), user.getAvatar());
     }
 
+    AuthResponse loginOrRegisterEmailUser(String email) {
+        String normalized = normalizeEmail(email);
+        User user = userRepo.findByEmail(normalized).orElse(null);
+        if (user == null) {
+            byte[] secret = new byte[32];
+            secureRandom.nextBytes(secret);
+            user = User.builder()
+                    .username(uniqueUsernameFromEmail(normalized))
+                    .passwordHash(encoder.encode(Base64.getUrlEncoder().withoutPadding().encodeToString(secret)))
+                    .email(normalized)
+                    .nickname("粤语学习者")
+                    .build();
+            try {
+                user = userRepo.saveAndFlush(user);
+            } catch (DataIntegrityViolationException collision) {
+                User winner = userRepo.findByEmail(normalized).orElse(null);
+                if (winner == null) throw collision;
+                user = winner;
+            }
+        }
+        String token = jwtUtil.generate(user.getId(), user.getUsername());
+        return new AuthResponse(token, user.getUsername(), user.getId(), user.getNickname(), user.getAvatar());
+    }
+
     private String uniqueUsernameFromPhone(String phone) {
         String tail = phone.substring(phone.length() - 4);
         String base = "user" + tail;
@@ -120,5 +148,29 @@ public class AuthService {
             if (!userRepo.existsByUsername(cand)) return cand;
         }
         return "user" + System.currentTimeMillis();
+    }
+
+    private String uniqueUsernameFromEmail(String email) {
+        String base = "mail" + sha256(email).substring(0, 10);
+        if (!userRepo.existsByUsername(base)) return base;
+        for (int i = 1; i < 100; i++) {
+            String candidate = base + i;
+            if (!userRepo.existsByUsername(candidate)) return candidate;
+        }
+        return "mail" + System.currentTimeMillis();
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null || email.isBlank()) throw new IllegalArgumentException("邮箱格式不正确");
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String sha256(String value) {
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 unavailable", impossible);
+        }
     }
 }

@@ -206,4 +206,57 @@ class AuthServiceTest {
         assertEquals(14L, response.userId());
         assertEquals("winner", response.username());
     }
+
+    @Test
+    void emailLoginNormalizesAddressAndReturnsExistingUserWithoutChangingPassword() {
+        User user = User.builder().id(15L).username("member15").email("test.user@example.com")
+                .passwordHash("$2a$existing").nickname("会员").build();
+        when(userRepo.findByEmail("test.user@example.com")).thenReturn(Optional.of(user));
+
+        AuthResponse response = authService.loginOrRegisterEmailUser(" Test.User@Example.COM ");
+
+        assertEquals(15L, response.userId());
+        assertEquals("member15", response.username());
+        assertEquals("$2a$existing", user.getPasswordHash());
+        verify(userRepo, never()).saveAndFlush(any());
+        verify(encoder, never()).encode(anyString());
+    }
+
+    @Test
+    void emailLoginCreatesUserWithOpaqueNameAndRandomInternalPassword() {
+        when(userRepo.findByEmail("learner@example.com")).thenReturn(Optional.empty());
+        when(userRepo.existsByUsername(anyString())).thenReturn(false);
+        when(encoder.encode(anyString())).thenReturn("$2a$random");
+        when(userRepo.saveAndFlush(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0); u.setId(16L); return u;
+        });
+
+        AuthResponse response = authService.loginOrRegisterEmailUser("Learner@Example.com");
+
+        assertEquals(16L, response.userId());
+        verify(userRepo).saveAndFlush(argThat(u ->
+                "learner@example.com".equals(u.getEmail())
+                        && !u.getUsername().contains("learner")
+                        && !u.getUsername().contains("example")
+                        && !u.getUsername().contains("@")));
+        verify(encoder).encode(argThat(v ->
+                v.length() >= 40 && !v.toString().contains("learner@example.com")));
+    }
+
+    @Test
+    void emailRegistrationRaceReturnsWinningUser() {
+        User winner = User.builder().id(17L).username("mailwinner").email("race@example.com")
+                .passwordHash("$2a$winner").build();
+        when(userRepo.findByEmail("race@example.com"))
+                .thenReturn(Optional.empty(), Optional.of(winner));
+        when(userRepo.existsByUsername(anyString())).thenReturn(false);
+        when(encoder.encode(anyString())).thenReturn("$2a$random");
+        when(userRepo.saveAndFlush(any(User.class)))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("email unique"));
+
+        AuthResponse response = authService.loginOrRegisterEmailUser("Race@Example.com");
+
+        assertEquals(17L, response.userId());
+        assertEquals("mailwinner", response.username());
+    }
 }
