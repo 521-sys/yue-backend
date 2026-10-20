@@ -29,10 +29,27 @@ CREATE TABLE IF NOT EXISTS email_login_codes (
  expires_at datetime(6) NOT NULL,
  consumed_at datetime(6) NULL,
  failed_attempts int NOT NULL DEFAULT 0,
- status varchar(12) NOT NULL,
+ status enum('PENDING','SENT','CONSUMED','FAILED') NOT NULL,
  provider_request_id varchar(128) NULL,
  active_email varchar(254) NULL,
  CONSTRAINT uk_email_login_codes_active_email UNIQUE (active_email),
  INDEX idx_email_login_codes_email_created (email, created_at),
  INDEX idx_email_login_codes_ip_created (request_ip_hash, created_at)
 );
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS email_login_status_migrate$$
+CREATE PROCEDURE email_login_status_migrate()
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema=DATABASE() AND table_name='email_login_codes'
+      AND column_name='status' AND data_type <> 'enum'
+  ) THEN
+    ALTER TABLE email_login_codes
+      MODIFY COLUMN status enum('PENDING','SENT','CONSUMED','FAILED') NOT NULL;
+  END IF;
+END$$
+CALL email_login_status_migrate()$$
+DROP PROCEDURE email_login_status_migrate$$
+DELIMITER ;
