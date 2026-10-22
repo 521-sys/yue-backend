@@ -90,6 +90,7 @@ app:
 
 admin:
   audio-dir: ${ADMIN_AUDIO_DIR:./data/admin-audio}
+  dubbing-video-dir: ${ADMIN_DUBBING_VIDEO_DIR:./data/dubbing-videos}
   username: ${ADMIN_USERNAME:admin}
   password-hash: ${ADMIN_PASSWORD_HASH:}
 
