@@ -57,8 +57,8 @@ public class DubbingVideoResponse {
             }
 
             long count = end - start + 1;
-            headers.set(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + length);
-            headers.setContentLength(count);
+            // ResourceRegionHttpMessageConverter writes Content-Range and Content-Length.
+            // Pre-populating Content-Range here gives the converter an immutable copied list.
             return new ResponseEntity<>(new ResourceRegion(resource, start, count), headers, HttpStatus.PARTIAL_CONTENT);
         } catch (AdminApiException exception) {
             throw exception;

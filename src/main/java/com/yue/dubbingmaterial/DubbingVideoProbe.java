@@ -3,6 +3,7 @@ package com.yue.dubbingmaterial;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yue.admin.AdminApiException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -19,6 +20,7 @@ public class DubbingVideoProbe {
     private final Duration timeout;
     private final ProcessStarter processStarter;
 
+    @Autowired
     public DubbingVideoProbe(@Value("${app.dubbing-asr.ffprobe:ffprobe}") String executable) {
         this(executable, Duration.ofSeconds(10), command -> new ProcessBuilder(command)
                 .redirectError(ProcessBuilder.Redirect.DISCARD).start());

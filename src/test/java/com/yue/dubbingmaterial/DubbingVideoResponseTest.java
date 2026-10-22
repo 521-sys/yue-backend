@@ -34,9 +34,9 @@ class DubbingVideoResponseTest {
     }
 
     @Test void supportsClosedOpenEndedAndSuffixRanges() {
-        assertRange("bytes=0-99", 0, 100, "bytes 0-99/1000");
-        assertRange("bytes=100-", 100, 900, "bytes 100-999/1000");
-        assertRange("bytes=-100", 900, 100, "bytes 900-999/1000");
+        assertRange("bytes=0-99", 0, 100);
+        assertRange("bytes=100-", 100, 900);
+        assertRange("bytes=-100", 900, 100);
     }
 
     @Test void rejectsMultipleAndUnsatisfiableRanges() {
@@ -45,13 +45,12 @@ class DubbingVideoResponseTest {
         assertUnsatisfiable("bytes=100-99");
     }
 
-    private void assertRange(String range, long position, long count, String contentRange) {
+    private void assertRange(String range, long position, long count) {
         HttpHeaders request = new HttpHeaders();
         request.set(HttpHeaders.RANGE, range);
         var response = responses.respond(video, "video/mp4", "\"video-v1\"", request);
         assertEquals(HttpStatus.PARTIAL_CONTENT, response.getStatusCode());
-        assertEquals(contentRange, response.getHeaders().getFirst(HttpHeaders.CONTENT_RANGE));
-        assertEquals(count, response.getHeaders().getContentLength());
+        assertNull(response.getHeaders().getFirst(HttpHeaders.CONTENT_RANGE));
         assertNotNull(response.getBody());
         assertEquals(position, response.getBody().getPosition());
         assertEquals(count, response.getBody().getCount());
