@@ -29,6 +29,10 @@ public class AdminDubbingMaterialController {
     }
 
     @GetMapping("/{id}") public MaterialDetail get(@PathVariable long id) { return service.get(id); }
+    @RequestMapping(value="/{id}/cover",method={RequestMethod.POST,RequestMethod.PUT})
+    public MaterialDetail uploadCover(Principal principal,@PathVariable long id,@RequestParam Long materialVersion,@RequestParam MultipartFile file){return service.uploadCover(principal.getName(),id,materialVersion,file);}
+    @GetMapping("/{id}/cover")
+    public ResponseEntity<org.springframework.core.io.Resource> cover(@PathVariable long id,org.springframework.web.context.request.WebRequest request){var c=service.cover(id);return DubbingCoverResponse.respond(c.path(),c.contentType(),c.etag(),request,false);}
 
     @PostMapping public MaterialDetail create(Principal principal, @RequestBody MaterialSaveRequest request) {
         return service.create(principal.getName(), request);

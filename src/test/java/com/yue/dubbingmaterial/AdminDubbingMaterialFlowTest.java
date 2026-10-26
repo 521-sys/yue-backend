@@ -34,10 +34,12 @@ class AdminDubbingMaterialFlowTest {
     @Autowired ObjectMapper json;
     @Autowired AdminAuditLogRepository audits;
     @MockBean DubbingVideoStorage storage;
+    @MockBean DubbingCoverStorage covers;
 
     @BeforeEach void storageResult() {
         when(storage.store(any())).thenReturn(new DubbingVideoStorage.StoredVideo(
                 "stored.mp4", "video/mp4", 1234, 5000, "h264", "aac"));
+        when(covers.store(any())).thenReturn(new DubbingCoverStorage.StoredCover("cover.png","image/png",100,1280,720));
     }
 
     @Test void createEditUploadPublishPublicReadOfflineAndDeleteAreVersionedAndAudited() throws Exception {
@@ -74,6 +76,12 @@ class AdminDubbingMaterialFlowTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.parts[0].sortOrder").value(2))
                 .andExpect(jsonPath("$.parts[0].cues[0].text").value("更新台词")).andReturn());
         materialVersion = edited.path("materialVersion").asLong();
+
+        mvc.perform(put("/api/admin/dubbing-materials/"+id+"/status").with(user("operator").roles("ADMIN")).contentType("application/json")
+            .content("{\"status\":\"PUBLISHED\",\"materialVersion\":"+materialVersion+"}")).andExpect(status().isBadRequest());
+        JsonNode covered=node(mvc.perform(multipart("/api/admin/dubbing-materials/"+id+"/cover").file(new MockMultipartFile("file","cover.png","image/png",new byte[]{1}))
+            .param("materialVersion",Long.toString(materialVersion)).with(user("operator").roles("ADMIN")).with(r->{r.setContent(new byte[1]);return r;})).andExpect(status().isOk()).andReturn());
+        materialVersion=covered.path("materialVersion").asLong();
 
         JsonNode published = node(mvc.perform(put("/api/admin/dubbing-materials/" + id + "/status")
                         .with(user("operator").roles("ADMIN")).contentType("application/json")

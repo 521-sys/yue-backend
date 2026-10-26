@@ -22,6 +22,8 @@ public class PublicDubbingMaterialController {
 
     @GetMapping public List<PublicMaterial> list() { return service.list(); }
     @GetMapping("/{code}") public PublicMaterial get(@PathVariable String code) { return service.get(code); }
+    @GetMapping("/{code}/cover")
+    public ResponseEntity<org.springframework.core.io.Resource> cover(@PathVariable String code,org.springframework.web.context.request.WebRequest request){var c=service.cover(code);return DubbingCoverResponse.respond(c.path(),c.contentType(),c.etag(),request,true);}
 
     @GetMapping("/{materialCode}/parts/{partCode}/video")
     public ResponseEntity<ResourceRegion> video(@PathVariable String materialCode, @PathVariable String partCode,

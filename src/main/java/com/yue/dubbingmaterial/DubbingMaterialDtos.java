@@ -13,7 +13,10 @@ public final class DubbingMaterialDtos {
     public record MaterialDetail(Long id, String code, String title, String difficulty, List<String> tags,
                                  String sourceLabel, String sourceUrl, String licenseLabel, String licenseUrl,
                                  String status, int sortOrder, Long materialVersion, Instant createdAt,
-                                 Instant updatedAt, List<PartDetail> parts) {}
+                                 Instant updatedAt, List<PartDetail> parts, CoverItem cover) {}
+
+    public record CoverItem(String url, String originalName, String contentType, long sizeBytes,
+                            int width, int height, long coverVersion) {}
 
     public record MaterialSaveRequest(String code, String title, String difficulty, List<String> tags,
                                       String sourceLabel, String sourceUrl, String licenseLabel, String licenseUrl,
@@ -34,7 +37,7 @@ public final class DubbingMaterialDtos {
 
     public record PublicMaterial(String id, String title, String difficulty, List<String> tags,
                                  String sourceLabel, String sourceUrl, String licenseLabel, String licenseUrl,
-                                 List<PublicPart> parts) {}
+                                 List<PublicPart> parts, String coverUrl) {}
 
     public record PublicPart(String id, String label, String title, String videoSrc, List<PublicCue> cues) {}
 

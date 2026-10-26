@@ -20,6 +20,14 @@ public class DubbingMaterial {
     @Column(nullable = false, length = 1000) private String sourceUrl;
     @Column(nullable = false, length = 80) private String licenseLabel;
     @Column(nullable = false, length = 1000) private String licenseUrl;
+    @Column(length=80) private String coverKey;
+    @Column(length=200) private String coverOriginalName;
+    @Column(length=80) private String coverFileName;
+    @Column(length=40) private String coverContentType;
+    private Long coverSizeBytes;
+    private Integer coverWidth;
+    private Integer coverHeight;
+    @Builder.Default @Column(nullable=false) private long coverVersion=0;
     @Builder.Default @Column(nullable = false, length = 12) private String status = "DRAFT";
     @Builder.Default @Column(nullable = false) private int sortOrder = 0;
     @Version @Builder.Default @Column(nullable = false) private Long version = 0L;

@@ -23,11 +23,12 @@ public class DubbingUploadFilter extends OncePerRequestFilter {
                 && path.matches("/api/admin/dubbing-materials/[0-9]+/parts/[0-9]+/video")
                 && request.getUserPrincipal()!=null;
         if (!dubbing && !multipart) { chain.doFilter(request, response); return; }
+        boolean adminCover=(request.getMethod().equals("POST")||request.getMethod().equals("PUT"))&&path.matches("/api/admin/dubbing-materials/[0-9]+/cover")&&request.getUserPrincipal()!=null;
         if (dubbing && !properties.isEnabled()) { reject(response, 503, "云端粤语识别尚未开通，请先导入 SRT 或手动添加台词"); return; }
         long length = request.getContentLengthLong();
         if (length < 0) { reject(response, 411, "上传需要提供文件长度"); return; }
-        if (length > (dubbing||adminVideo ? 201L : adminAudio ? 21L : 2L) * 1024 * 1024) { reject(response, 413, "上传文件超过大小限制"); return; }
-        if (!dubbing && !adminVideo) { chain.doFilter(request, response); return; }
+        if (length > (dubbing||adminVideo ? 201L : adminAudio ? 21L : adminCover ? 6L : 2L) * 1024 * 1024) { reject(response, 413, "上传文件超过大小限制"); return; }
+        if (!dubbing && !adminVideo && !adminCover) { chain.doFilter(request, response); return; }
         if (!uploading.tryAcquire()) { reject(response, 503, dubbing?"识别服务正忙，请稍后重试":"上传服务正忙，请稍后重试"); return; }
         try {
             if (dubbing && !service.available()) { reject(response, 503, "识别服务正忙，请稍后重试"); return; }

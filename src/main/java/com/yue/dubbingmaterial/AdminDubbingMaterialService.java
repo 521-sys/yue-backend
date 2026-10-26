@@ -36,16 +36,18 @@ public class AdminDubbingMaterialService {
     private final DubbingPartRepository parts;
     private final DubbingCueRepository cues;
     private final DubbingVideoStorage storage;
+    private final DubbingCoverStorage covers;
     private final AdminAuditService audit;
 
     public AdminDubbingMaterialService(DubbingMaterialRepository materials, DubbingPartRepository parts,
                                        DubbingCueRepository cues, DubbingVideoStorage storage,
-                                       AdminAuditService audit) {
+                                       AdminAuditService audit, DubbingCoverStorage covers) {
         this.materials = materials;
         this.parts = parts;
         this.cues = cues;
         this.storage = storage;
         this.audit = audit;
+        this.covers = covers;
     }
 
     @Transactional(readOnly = true)
@@ -158,6 +160,7 @@ public class AdminDubbingMaterialService {
         DubbingMaterial material = locked(id);
         version(material, expectedVersion);
         if ("PUBLISHED".equals(material.getStatus())) throw new AdminApiException(409, "请先下架再删除");
+        if(material.getCoverFileName()!=null)cleanupCover(material.getCoverFileName(),true);
         List<DubbingPart> owned = parts.findByMaterialIdOrderBySortOrderAscIdAsc(id);
         for (DubbingPart part : owned) if (part.getFileName() != null) cleanup(part.getFileName(), true);
         cues.deleteByPartIdIn(owned.stream().map(DubbingPart::getId).toList());
@@ -226,6 +229,7 @@ public class AdminDubbingMaterialService {
     }
 
     private void validatePublication(DubbingMaterial material) {
+        if(material.getCoverFileName()==null)throw new AdminApiException(400,"请先上传素材封面");
         required(material.getTitle(), 120, "素材标题");
         required(material.getDifficulty(), 20, "难度");
         required(material.getSourceLabel(), 200, "来源说明");
@@ -312,7 +316,30 @@ public class AdminDubbingMaterialService {
         return new MaterialDetail(material.getId(), material.getCode(), material.getTitle(), material.getDifficulty(),
                 tags(material), material.getSourceLabel(), material.getSourceUrl(), material.getLicenseLabel(),
                 material.getLicenseUrl(), material.getStatus(), material.getSortOrder(), material.getVersion(),
-                material.getCreatedAt(), material.getUpdatedAt(), details);
+                material.getCreatedAt(), material.getUpdatedAt(), details, coverItem(material));
+    }
+
+    public MaterialDetail uploadCover(String actor,long id,Long expectedVersion,MultipartFile file){
+        var material=locked(id);version(material,expectedVersion);
+        if("PUBLISHED".equals(material.getStatus()))throw new AdminApiException(409,"请先下架再替换封面");
+        var stored=covers.store(file);cleanupCover(stored.fileName(),false);
+        String old=material.getCoverFileName();if(old!=null)cleanupCover(old,true);
+        material.setCoverKey(UUID.randomUUID().toString());material.setCoverFileName(stored.fileName());
+        material.setCoverOriginalName(safeName(file.getOriginalFilename()));material.setCoverContentType(stored.contentType());
+        material.setCoverSizeBytes(stored.sizeBytes());material.setCoverWidth(stored.width());material.setCoverHeight(stored.height());
+        material.setCoverVersion(material.getCoverVersion()+1);touch(material);materials.saveAndFlush(material);
+        audit.record(actor,old==null?"UPLOAD_COVER":"REPLACE_COVER","DUBBING_MATERIAL",id,material.getTitle());return detail(material);
+    }
+    @Transactional(readOnly=true)
+    public VideoAccess cover(long id){var m=find(id);return new VideoAccess(covers.path(m.getCoverFileName()),m.getCoverContentType(),"\"cover-"+m.getCoverKey()+"-v"+m.getCoverVersion()+"\"");}
+    private CoverItem coverItem(DubbingMaterial m){
+        if(m.getCoverFileName()==null)return null;
+        return new CoverItem("/api/admin/dubbing-materials/"+m.getId()+"/cover?v="+m.getCoverVersion(),m.getCoverOriginalName(),m.getCoverContentType(),m.getCoverSizeBytes(),m.getCoverWidth(),m.getCoverHeight(),m.getCoverVersion());
+    }
+    private void cleanupCover(String file,boolean onCommit){
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
+            @Override public void afterCompletion(int status){if(onCommit?status==STATUS_COMMITTED:status!=STATUS_COMMITTED){try{covers.remove(file);}catch(Exception e){LoggerFactory.getLogger(AdminDubbingMaterialService.class).warn("封面文件清理失败: {}",file);}}}
+        });
     }
 
     private VideoItem videoItem(long materialId, DubbingPart part) {

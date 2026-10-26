@@ -25,13 +25,15 @@ public class PublicDubbingMaterialService {
     private final DubbingPartRepository parts;
     private final DubbingCueRepository cues;
     private final DubbingVideoStorage storage;
+    private final DubbingCoverStorage covers;
 
     public PublicDubbingMaterialService(DubbingMaterialRepository materials, DubbingPartRepository parts,
-                                        DubbingCueRepository cues, DubbingVideoStorage storage) {
+                                        DubbingCueRepository cues, DubbingVideoStorage storage, DubbingCoverStorage covers) {
         this.materials = materials;
         this.parts = parts;
         this.cues = cues;
         this.storage = storage;
+        this.covers = covers;
     }
 
     public List<PublicMaterial> list() {
@@ -39,6 +41,7 @@ public class PublicDubbingMaterialService {
     }
 
     public PublicMaterial get(String code) { return map(published(code)); }
+    public VideoAccess cover(String code){var m=published(code);return new VideoAccess(covers.path(m.getCoverFileName()),m.getCoverContentType(),"\"cover-"+m.getCoverKey()+"-v"+m.getCoverVersion()+"\"");}
 
     public VideoAccess video(String materialCode, String partCode) {
         DubbingMaterial material = published(materialCode);
@@ -78,7 +81,8 @@ public class PublicDubbingMaterialService {
             }).toList();
             List<String> tags = JSON.readValue(material.getTagsJson(), new TypeReference<>() {});
             return new PublicMaterial(material.getCode(), material.getTitle(), material.getDifficulty(), tags,
-                    material.getSourceLabel(), material.getSourceUrl(), material.getLicenseLabel(), material.getLicenseUrl(), publicParts);
+                    material.getSourceLabel(), material.getSourceUrl(), material.getLicenseLabel(), material.getLicenseUrl(), publicParts,
+                    material.getCoverFileName()==null?null:"/api/public/dubbing-materials/"+material.getCode()+"/cover?v="+material.getCoverVersion());
         } catch (AdminApiException exception) {
             throw exception;
         } catch (Exception exception) {

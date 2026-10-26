@@ -38,11 +38,16 @@ class DubbingMaterialMysqlMigrationTest {
 
         runSql("scripts/dubbing-material-migration.sql");
         runSql("scripts/dubbing-material-migration.sql");
+        runSql("scripts/dubbing-cover-migration.sql");
+        runSql("scripts/dubbing-cover-migration.sql");
         runSql("scripts/dubbing-material-seed.sql");
         runSql("scripts/dubbing-material-seed.sql");
+        runSql("scripts/dubbing-cover-seed.sql");
+        runSql("scripts/dubbing-cover-seed.sql");
 
         try (var connection = DriverManager.getConnection(URL, "root", ""); var statement = connection.createStatement()) {
             assertScalar(statement, "SELECT COUNT(*) FROM dubbing_materials", "2");
+            assertScalar(statement,"SELECT COUNT(*) FROM dubbing_materials WHERE cover_file_name IS NOT NULL AND cover_version=1","2");
             assertScalar(statement, "SELECT COUNT(*) FROM dubbing_parts", "6");
             assertScalar(statement, "SELECT COUNT(*) FROM dubbing_cues", "25");
             assertScalar(statement, "SELECT COUNT(*) FROM dubbing_materials WHERE status='PUBLISHED'", "2");
